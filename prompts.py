@@ -29,3 +29,27 @@ Return your output as structured JSON with the fields:
   - links: A corresponding list of URLs for the news.
 If no news is found, please indicate this by returning an empty list for the 'news' and 'links' fields.
 """
+
+
+stock_analysis_prompt = """
+You are a seasoned economist and financial analyst with extensive experience in the stock market.
+Analyze the following stock data and related news in detail:
+Stock Data:
+{stock}
+
+News Summary:
+{news}
+
+Based on your analysis, provide:
+- The overall market sentiment for the stock.
+- A clear recommendation on whether to buy, sell, or hold the stock.
+- A detailed explanation supporting your recommendation.
+- A concise summary of the key news events.
+
+Return your response in JSON format with the following fields:
+  - symbol
+  - sentiment
+  - recommendation
+  - reasoning
+  - news_summary
+"""

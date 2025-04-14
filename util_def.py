@@ -3,14 +3,17 @@ import os
 logger = setup_logger(name="util_def", log_file="logs/util_def.log")
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from pydantic_class import SearchOutput,NewsSearchResult
-from prompts import search_symbol_prompt,news_prompt
+from pydantic_class import SearchOutput,NewsSearchResult,StockAnalysis
+from prompts import search_symbol_prompt,news_prompt,stock_analysis_prompt
+from test_output import graph_output,news_response
 import requests
 from dotenv import load_dotenv
 import yfinance as yf
 import json
 import finnhub
 from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+from typing import Any, Dict
 load_dotenv()
 # Initialize the LLM
 try:
@@ -92,15 +95,6 @@ def latest_news(symbol: str) -> str:
         - headline: A list of news headlines.
         - summary: A list of news summaries.
         - links: A list of news article URLs.
-
-    Parameters:
-        symbol (str): Stock ticker symbol (e.g., "AAPL").
-
-    Returns:
-        str: A JSON string containing structured news data.
-
-    Raises:
-        Exception: If an error occurs while fetching or processing the news.
     """
     try:
         finnhub_api_key = os.getenv("FINNHUB_API_KEY")
@@ -118,7 +112,6 @@ def latest_news(symbol: str) -> str:
         if news:
             newsRes = NewsSearchResult(
                 symbol=symbol,
-                stock_name=symbol,  # Replace with actual stock name if available
                 headline=[item.get("headline", "") for item in news],
                 summary=[item.get("summary", "") for item in news],
                 links=[item.get("url", "") for item in news]
@@ -141,12 +134,57 @@ def latest_news(symbol: str) -> str:
         logger.error("Unexpected error occurred while fetching news.", exc_info=True)
         raise e
 
+def analyze_stock_data(realtime_data: str, news_data: str):
+    """
+    Analyzes realtime stock data along with related news and returns a structured recommendation.
+    
+    This function uses an LLM agent to process the provided stock data and news summary.
+    The agent returns its analysis in a structured JSON format defined by the StockAnalysis model.
+    
+    Parameters:
+        realtime_data (str): A string containing the realtime stock information.
+        news_data (str): A string with related news summaries and events.
+    
+    Returns:
+        dict: The structured analysis result including the stock symbol, sentiment, recommendation,
+              reasoning, and a summary of the news.
+    
+    Raises:
+        Exception: Any exceptions encountered during analysis are logged and raised.
+    """
+    try:
+        # Define tools if needed. In this example, we assume an empty list.
+        tools = []
+        # Create the agent using the global llm instance
+        agent = create_react_agent(llm, tools, response_format=StockAnalysis)
+        
+        # Format the prompt by injecting the realtime_data and news_data into the prompt.
+        formatted_prompt = stock_analysis_prompt.format(stock=realtime_data, news=news_data)
+        
+        payload = {'messages': [('user', formatted_prompt)]}
+        response = agent.invoke(payload)
+        structured_response = response.get('structured_response')
+        result = []
+        result.append(structured_response)
+        if not structured_response:
+            logger.warning("No structured response was returned by the agent.")
+            return {}
+        
+        logger.debug("Stock analysis completed successfully for the provided data.")
+        
+        # Return the structured response. It's already of type dict if parsed correctly.
+        return result
+    
+    except Exception as e:
+        logger.error("Unexpected error occurred while analyzing the stock data.", exc_info=True)
+        raise e
+
 
 # Example usage
 # search_keyword("SBI stock analysis")
 # search_keyword("Apple company")
 # search_keyword("HDFC BANK stock")
-# print(get_ticker("HDFCBANK.NS"))
-print(latest_news("AAPL"))
+# print(get_ticker("AAPL"))
+# print(latest_news("AAPL"))
 
-
+# print(analyze_stock_data(graph_output,news_response))
