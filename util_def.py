@@ -106,7 +106,7 @@ def latest_news(symbol: str) -> str:
         
         # Fetch company news from finnhub for a given date range.
         # Adjust the _from and to dates as needed.
-        news = finnhub_client.company_news(symbol, _from="2025-04-10", to="2025-04-13")
+        news = finnhub_client.company_news(symbol, _from="2025-04-05", to="2025-04-15")
         logger.debug("Fetched the news successfully from finnhub")
 
         if news:
