@@ -1,8 +1,9 @@
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph,START,END
 from util_def import search_keyword,latest_news,get_ticker,analyze_stock_data
 from pydantic_class import AgentState 
 from logger import setup_logger
 from test_output import news_data,graph_data
+from IPython.display import Image,display
 logger = setup_logger(name="graph_workflow",log_file="logs/graph_workflow.log")
 def search(agentState:AgentState):
     """This will search the stock and return symbol of it."""
@@ -21,7 +22,7 @@ def get_graph_data(agentState:AgentState):
     """It will reterive the graph for the given symbol"""
     try:
         data = get_ticker(agentState.symbol)
-        print(data)
+        # print(data)
         agentState.graph_data = data
         logger.debug("stock ticker data collected ")
         return agentState
@@ -99,12 +100,17 @@ def invoke_graph(agentState:AgentState):
     graph = graph.set_finish_point('ai_analysis')
 
     graph = graph.compile()
+    # image_bytes = graph.get_graph().draw_mermaid_png()
+    # display(Image(image_bytes))
+    # with open("graph_architecture.png", "wb") as f:
+    #     f.write(image_bytes)
+    # print("Graph architecture saved to graph_architecture.png")
     result = graph.invoke(agentState)
-    print(result)
+    return result
 
 
 
 if __name__ == '__main__':
-    ag = AgentState(query="Apple stock analysis")
+    ag = AgentState(query="Microsoft stock analysis")
     print(ag)
-    invoke_graph(ag)
+    print(invoke_graph(ag))
