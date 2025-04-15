@@ -1,5 +1,5 @@
 from pydantic import BaseModel,Field,Json
-from typing import List,Any
+from typing import List,Any,Dict
 class SearchOutput(BaseModel):
     symbol: str = Field(description="Stock symbol as per yfinance (e.g., AAPL, MSFT). Returns 'NA' if no stock symbol is found.")
 
@@ -20,10 +20,10 @@ class StockAnalysis(BaseModel):
     stock_data_summary : str = Field(...,description="A brief summary of important stock close price and volume traded which ")
 class AgentState(BaseModel):
     query : str
-    symbol : str
-    graph_data : Json[Any]
-    news_data : List[dict]
-    agent_analysis:dict
+    symbol: str = ""
+    graph_data: Any = None
+    news_data: List[Dict[str, Any]] = []
+    agent_analysis: Dict[str, Any] = {}
 
 
 
