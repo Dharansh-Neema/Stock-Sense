@@ -86,7 +86,6 @@ def invoke_graph(agentState:AgentState):
       2. Retrieves realtime graph data.
       3. Fetches the latest news.
       4. Performs analysis.
-      
     Returns the final AgentState with updates from each step."""
     graph = StateGraph(AgentState)
     graph = graph.add_node('search',search)
