@@ -81,8 +81,13 @@ def ai_analysis(agentState: AgentState) -> dict:
         raise e
     
 def invoke_graph(agentState:AgentState):
-    """The invoke graph function will build a langgraph and 
-    use return the output in Agentstate format."""
+    """ Builds and invokes a sequential workflow that:
+      1. Searches for the stock symbol.
+      2. Retrieves realtime graph data.
+      3. Fetches the latest news.
+      4. Performs analysis.
+      
+    Returns the final AgentState with updates from each step."""
     graph = StateGraph(AgentState)
     graph = graph.add_node('search',search)
     graph = graph.add_node('get_graph_data',get_graph_data)
