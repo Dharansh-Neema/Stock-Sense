@@ -1,5 +1,5 @@
-from pydantic import BaseModel,Field
-from typing import List
+from pydantic import BaseModel,Field,Json
+from typing import List,Any
 class SearchOutput(BaseModel):
     symbol: str = Field(description="Stock symbol as per yfinance (e.g., AAPL, MSFT). Returns 'NA' if no stock symbol is found.")
 
@@ -15,11 +15,15 @@ class StockAnalysis(BaseModel):
     sentiment: str = Field(..., description="Overall market sentiment regarding the stock.")
     recommendation: str = Field(..., description="Final recommendation for the stock, such as buy, sell, or hold.")
     reasoning: str = Field(..., description="The rationale behind the recommendation, highlighting key factors.")
+    buy_or_sell_price : str = Field(...,description="Recommend a buy or sell price point.")
     news_summary: str = Field(..., description="A summary of the news and events impacting the stock.")
-
+    stock_data_summary : str = Field(...,description="A brief summary of important stock close price and volume traded which ")
 class AgentState(BaseModel):
     query : str
     symbol : str
+    graph_data : Json[Any]
+    news_data : List[dict]
+    agent_analysis:dict
 
 
 

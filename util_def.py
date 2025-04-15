@@ -5,7 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from pydantic_class import SearchOutput,NewsSearchResult,StockAnalysis
 from prompts import search_symbol_prompt,news_prompt,stock_analysis_prompt
-from test_output import graph_output,news_response
+# from test_output import graph_output,news_response
 import requests
 from dotenv import load_dotenv
 import yfinance as yf
@@ -59,7 +59,7 @@ def get_ticker(symbol: str):
     """
     try:
         # Download stock data for the last 1 day with 5-minute intervals
-        data = yf.download(symbol, period="1d", interval="5m")
+        data = yf.download(symbol, period="1d", interval="15m")
         
         # If no data is available, return an error message in JSON
         if data.empty:
@@ -134,7 +134,7 @@ def latest_news(symbol: str) -> str:
         logger.error("Unexpected error occurred while fetching news.", exc_info=True)
         raise e
 
-def analyze_stock_data(realtime_data: str, news_data: str):
+def analyze_stock_data(symbol,realtime_data, news_data):
     """
     Analyzes realtime stock data along with related news and returns a structured recommendation.
     
@@ -159,7 +159,7 @@ def analyze_stock_data(realtime_data: str, news_data: str):
         agent = create_react_agent(llm, tools, response_format=StockAnalysis)
         
         # Format the prompt by injecting the realtime_data and news_data into the prompt.
-        formatted_prompt = stock_analysis_prompt.format(stock=realtime_data, news=news_data)
+        formatted_prompt = stock_analysis_prompt.format(symbol=symbol,stock=realtime_data, news=news_data)
         
         payload = {'messages': [('user', formatted_prompt)]}
         response = agent.invoke(payload)
@@ -173,7 +173,7 @@ def analyze_stock_data(realtime_data: str, news_data: str):
         logger.debug("Stock analysis completed successfully for the provided data.")
         
         # Return the structured response. It's already of type dict if parsed correctly.
-        return result
+        return structured_response.dict()
     
     except Exception as e:
         logger.error("Unexpected error occurred while analyzing the stock data.", exc_info=True)

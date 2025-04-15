@@ -34,6 +34,7 @@ If no news is found, please indicate this by returning an empty list for the 'ne
 stock_analysis_prompt = """
 You are a seasoned economist and financial analyst with extensive experience in the stock market.
 Analyze the following stock data and related news in detail:
+Stock Symbol: {symbol}
 Stock Data:
 {stock}
 
@@ -45,11 +46,15 @@ Based on your analysis, provide:
 - A clear recommendation on whether to buy, sell, or hold the stock.
 - A detailed explanation supporting your recommendation.
 - A concise summary of the key news events.
+- A recommended price point to buy or sell or hold
+- A brief overview of the highlighting part of stock price closed and volume traded.
 
 Return your response in JSON format with the following fields:
   - symbol
   - sentiment
   - recommendation
   - reasoning
+  - buy_or_sell_price
   - news_summary
+  - stock_data_summary
 """
