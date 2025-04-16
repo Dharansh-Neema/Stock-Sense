@@ -3,6 +3,7 @@ from util_def import search_keyword,latest_news,get_ticker,analyze_stock_data
 from pydantic_class import AgentState 
 from logger import setup_logger
 from test_output import news_data,graph_data
+from finnhub.exceptions import FinnhubAPIException
 from IPython.display import Image,display
 logger = setup_logger(name="graph_workflow",log_file="logs/graph_workflow.log")
 def search(agentState:AgentState):
@@ -45,6 +46,10 @@ def get_latest_news(agentState:AgentState):
         # print(result)
         logger.debug("Successfully retrieved and structured the top %d news items for symbol: %s", top_count, agentState.symbol)
         agentState.news_data = result
+        return agentState
+    except FinnhubAPIException as fe:
+        logger.warning("Finnhub API access denied for symbol %s. Proceeding without news. [403]", agentState.symbol)
+        agentState.news_data = [{"headline": "News access restricted", "summary": "Unable to fetch news due to API limitations."}]
         return agentState
     except Exception as e:
         logger.error("Unexpected error while getting latest news.",e)
@@ -111,6 +116,6 @@ def invoke_graph(agentState:AgentState):
 
 
 if __name__ == '__main__':
-    ag = AgentState(query="Microsoft stock analysis")
+    ag = AgentState(query="HDFC Bank analysis")
     print(ag)
     print(invoke_graph(ag))
