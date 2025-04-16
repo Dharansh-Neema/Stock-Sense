@@ -86,9 +86,11 @@ def get_ticker(symbol: str):
         logger.error("Unexpected error occurred while fetching and generating the data", e)
         raise e
     
-def latest_news(symbol: str) -> str:
+from datetime import datetime, timedelta
+
+def latest_news(symbol: str) -> NewsSearchResult:
     """
-        Fetch the latest news for a given stock symbol using finnhub.
+    Fetch the latest news for a given stock symbol using finnhub.
     The output is returned in a structured JSON format that contains:
         - symbol: The queried stock symbol.
         - stock_name: The full name of the stock (using symbol as a placeholder if not available).
@@ -103,10 +105,18 @@ def latest_news(symbol: str) -> str:
 
         # Initialize finnhub client
         finnhub_client = finnhub.Client(api_key=finnhub_api_key)
+
+        # Calculate dynamic date range (last 10 days)
+        to_date = datetime.today().date()
+        from_date = to_date - timedelta(days=10)
+
+        # Convert to strings in YYYY-MM-DD format
+        from_str = from_date.strftime('%Y-%m-%d')
+        to_str = to_date.strftime('%Y-%m-%d')
+        print(from_str)
         
-        # Fetch company news from finnhub for a given date range.
-        # Adjust the _from and to dates as needed.
-        news = finnhub_client.company_news(symbol, _from="2025-04-05", to="2025-04-15")
+        # Fetch company news from finnhub
+        news = finnhub_client.company_news(symbol, _from=from_str, to=to_str)
         logger.debug("Fetched the news successfully from finnhub")
 
         if news:
@@ -117,23 +127,26 @@ def latest_news(symbol: str) -> str:
                 links=[item.get("url", "") for item in news]
             )
             logger.debug("Successfully formatted the news in structured format")
-            
             return newsRes
         else:
             logger.debug("No news found for the requested symbol")
-            empty_result = NewsSearchResult(
+            return NewsSearchResult(
                 symbol=symbol,
                 stock_name=symbol,
                 headline=[],
                 summary=[],
                 links=[]
             )
-            return empty_result
-    
-    except Exception as e:
-        logger.error("Unexpected error occurred while fetching news.", exc_info=True)
-        raise e
 
+    except Exception as e:
+        logger.error("Error fetching news for symbol %s: %s", symbol, str(e))
+        return NewsSearchResult(
+            symbol=symbol,
+            stock_name=symbol,
+            headline=[],
+            summary=[],
+            links=[]
+        ) 
 def analyze_stock_data(symbol,realtime_data, news_data):
     """
     Analyzes realtime stock data along with related news and returns a structured recommendation.
@@ -185,6 +198,6 @@ def analyze_stock_data(symbol,realtime_data, news_data):
 # search_keyword("Apple company")
 # search_keyword("HDFC BANK stock")
 # print(get_ticker("AAPL"))
-# print(latest_news("AAPL"))
+print(latest_news("AAPL"))
 
 # print(analyze_stock_data(graph_output,news_response))
