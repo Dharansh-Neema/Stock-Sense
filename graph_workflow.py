@@ -47,6 +47,7 @@ def get_latest_news(agentState:AgentState):
         logger.debug("Successfully retrieved and structured the top %d news items for symbol: %s", top_count, agentState.symbol)
         agentState.news_data = result
         return agentState
+    
     except FinnhubAPIException as fe:
         logger.warning("Finnhub API access denied for symbol %s. Proceeding without news. [403]", agentState.symbol)
         agentState.news_data = [{"headline": "News access restricted", "summary": "Unable to fetch news due to API limitations."}]
