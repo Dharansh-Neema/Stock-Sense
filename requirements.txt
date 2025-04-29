@@ -8,3 +8,5 @@ finnhub-python
 IPython
 fastapi
 uvicorn
+streamlit
+plotly

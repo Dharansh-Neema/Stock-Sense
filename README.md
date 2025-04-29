@@ -3,7 +3,7 @@
 Stock-Sense is an intelligent stock analysis platform that provides real-time market insights, news analysis, and AI-driven recommendations. The system combines technical analysis with natural language processing to deliver comprehensive stock market intelligence.
 
 ### System Architecture
-[!arch](.utils/arch.png)
+![arch](./utils/arch.png)
 
 
 ## Features

@@ -106,17 +106,12 @@ def invoke_graph(agentState:AgentState):
     graph = graph.set_finish_point('ai_analysis')
 
     graph = graph.compile()
-    # image_bytes = graph.get_graph().draw_mermaid_png()
-    # display(Image(image_bytes))
-    # with open("graph_architecture.png", "wb") as f:
-    #     f.write(image_bytes)
-    # print("Graph architecture saved to graph_architecture.png")
     result = graph.invoke(agentState)
     return result
 
 
 
 if __name__ == '__main__':
-    ag = AgentState(query="HDFC Bank analysis")
+    ag = AgentState(query="Apple Stock analysis")
     print(ag)
     print(invoke_graph(ag))
