@@ -11,6 +11,12 @@ from dotenv import load_dotenv
 import yfinance as yf
 import json
 import finnhub
+try:
+    from curl_cffi import requests as cffi_requests
+    CURL_CFFI_AVAILABLE = True
+except ImportError:
+    CURL_CFFI_AVAILABLE = False
+    logger.warning("curl_cffi not available, rate limiting may occur with Yahoo Finance. Install with: pip install curl_cffi")
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from typing import Any, Dict
@@ -42,8 +48,8 @@ def search_keyword(query: str):
         print(f"Found Symbol: {answer.symbol}")
         return answer.symbol
     except Exception as e:
-        logger.error(f"Unexpected error occurred while finding symbol: {e}")
-        return e
+        logger.error(f"Unexpected error occurred while finding symbol: {e}", exc_info=True)
+        raise e
 
 
 def get_ticker(symbol: str):
@@ -58,33 +64,61 @@ def get_ticker(symbol: str):
              and a list of time-volume dictionary entries as volume_data.
     """
     try:
-        # Download stock data for the last 1 day with 5-minute intervals
-        data = yf.download(symbol, period="1d", interval="15m")
-        
-        # If no data is available, return an error message in JSON
-        if data.empty:
-            return json.dumps({"error": f"No data available for symbol {symbol}"})
-        
-        # Extract times as strings
-        times = data.index.strftime('%Y-%m-%d %H:%M:%S').tolist()
+        # Validate input
+        if not symbol or not isinstance(symbol, str):
+            raise ValueError("`symbol` must be a non-empty string.")
 
-        # Extract close prices, ensuring the object is a Series and then rounding values
-        close_prices = data['Close'].squeeze().round(2).tolist()
-        
-        # Extract volume data
-        volume_values = data['Volume'].squeeze().tolist()
-        
+        symbol = symbol.upper()  # Normalise the ticker
+        interval = "1m"          # 1-minute granularity for near-realtime
+        lookback_minutes = 60    # Last hour of data
+
+        # Build a Yahoo Finance session (curl_cffi helps bypass rate-limits)
+        if CURL_CFFI_AVAILABLE:
+            logger.info("Using curl_cffi session for %s", symbol)
+            session = cffi_requests.Session(impersonate="chrome")
+            ticker = yf.Ticker(symbol, session=session)
+        else:
+            ticker = yf.Ticker(symbol)
+
+        # First attempt – the fast path
+        data = ticker.history(period="1d", interval=interval, prepost=True)
+
+        # Fallback: explicit date-range via yfinance.download
+        if data.empty:
+            logger.info("Ticker.history() returned no data, falling back to yf.download()")
+            end_dt = datetime.utcnow()
+            start_dt = end_dt - timedelta(minutes=lookback_minutes)
+            data = yf.download(
+                tickers=symbol,
+                start=start_dt,
+                end=end_dt,
+                interval=interval,
+                progress=False,
+            )
+
+        if data.empty:
+            raise ValueError(f"No intraday data returned for {symbol}")
+
+        # Remove timezone from index if present for easier JSON serialization
+        if data.index.tz is not None:
+            data.index = data.index.tz_convert(None)
+
+        # Convert to plain Python lists
+        times = data.index.strftime("%Y-%m-%d %H:%M:%S").tolist()
+        close_prices = data["Close"].astype(float).round(2).tolist()
+        volume_values = data["Volume"].fillna(0).astype(float).tolist()
+
         result = {
             "symbol": symbol,
             "price_data": [{"time": t, "close": c} for t, c in zip(times, close_prices)],
-            "volume_data": [{"time": t, "volume": v} for t, v in zip(times, volume_values)]
+            "volume_data": [{"time": t, "volume": v} for t, v in zip(times, volume_values)],
         }
-        
-        logger.debug("Fetched the data for the given stock symbol successfully!")
+
+        logger.debug("Fetched %d datapoints for %s", len(times), symbol)
         return json.dumps(result, indent=4)
     except Exception as e:
-        logger.error("Unexpected error occurred while fetching and generating the data", e)
-        raise e
+        logger.error("Error while fetching intraday data for %s: %s", symbol, str(e), exc_info=True)
+        raise
     
 from datetime import datetime, timedelta
 
@@ -198,6 +232,6 @@ def analyze_stock_data(symbol,realtime_data, news_data):
 # search_keyword("Apple company")
 # search_keyword("HDFC BANK stock")
 # print(get_ticker("AAPL"))
-print(latest_news("AAPL"))
+# print(latest_news("AAPL"))
 
 # print(analyze_stock_data(graph_output,news_response))
